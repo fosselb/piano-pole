@@ -1,7 +1,7 @@
 import serial
 
-port = "COM6"           # Windows
-# port = "/dev/ttyUSB0"   # macOS
+# port = "COM6"           # Windows
+port = "/dev/cu.usbmodem145201"   # macOS
 
 with open("log.csv", "wb") as file:
     ser = serial.Serial(port, 9600, timeout=10)
