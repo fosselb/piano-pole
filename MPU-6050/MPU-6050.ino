@@ -2,7 +2,7 @@
 
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 
-const byte AC_SENS = 1;   // Accelerometer sensitivity (0-3)
+const byte AC_SENS = 0;   // Accelerometer sensitivity (0-3)
 const byte GY_SENS = 0;   // Gyroscope sensitivity (0-3)
 
 const float AC_SCALE = 16384/(AC_SENS + 1);
