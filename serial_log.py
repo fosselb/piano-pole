@@ -1,8 +1,8 @@
 import serial
 from time import sleep
 
-port = "COM6"           # Windows
-# port = "/dev/cu.usbmodem145201"   # macOS
+# port = "COM6"           # Windows
+port = "/dev/cu.usbmodem145401"   # macOS
 
 with open("log.csv", "wb") as file:
     ser = serial.Serial(port, 115200, timeout=10)
