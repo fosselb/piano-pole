@@ -126,6 +126,9 @@ MPU6050 mpu;
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
 
+long startTime = 0;
+long elapsedTime = 0;
+
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
 uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
@@ -247,6 +250,7 @@ void setup() {
 
     // configure LED for output
     pinMode(LED_PIN, OUTPUT);
+    startTime = millis();
 }
 
 
@@ -260,6 +264,7 @@ void loop() {
     if (!dmpReady) return;
     // read a packet from FIFO
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) { // Get the Latest packet 
+      elapsedTime = millis() - startTime;
         #ifdef OUTPUT_READABLE_QUATERNION
             // display quaternion values in easy matrix form: w x y z
             mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -330,6 +335,8 @@ void loop() {
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
             mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
+            Serial.print(elapsedTime/1000.0, 3);
+            Serial.print(",");
             Serial.print(aaWorld.x/16384.0, 3);
             Serial.print(",");
             Serial.print(aaWorld.y/16384.0, 3);
