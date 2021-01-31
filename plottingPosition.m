@@ -76,4 +76,3 @@ title("Position Data from MPU-6050 Module");
 xlabel("X (m)");
 ylabel("Y (m)");
 zlabel("Z (m)");
-
