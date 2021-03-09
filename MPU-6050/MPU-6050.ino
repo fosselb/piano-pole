@@ -10,8 +10,7 @@ const float GY_SCALE = 131/(GY_SENS + 1);
 
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
 
-long startTime = 0;
-long elapsedTime = 0;
+long time;
 
 void setup() {
   Wire.begin();
@@ -31,11 +30,10 @@ void setup() {
   Wire.write(AC_SENS<<3);
   Wire.endTransmission(true);
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.print("t,AcX,AcY,AcZ,GyX,GyY,GyZ,");
 //  Serial.print("Tmp");
   Serial.println();
-  startTime = millis();
 }
 
 void loop() {
@@ -44,7 +42,7 @@ void loop() {
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
 
-  elapsedTime = millis() - startTime;
+  time = millis();
 
   AcX=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
   AcY=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
@@ -55,7 +53,7 @@ void loop() {
   GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 
   // Time (s)
-  Serial.print(elapsedTime/1000.0, 3); Serial.print(',');
+  Serial.print(time/1000.0, 3); Serial.print(',');
 
   // Linear acceleration (multiples of g)
   Serial.print(AcX/AC_SCALE, 3); Serial.print(',');
