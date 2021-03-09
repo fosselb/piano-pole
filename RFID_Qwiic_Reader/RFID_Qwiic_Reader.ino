@@ -8,13 +8,14 @@
 #include <SparkFun_Qwiic_Rfid.h>
 
 #define RFID_ADDR 0x7D // Default I2C address
+#define NEW_RFID_ADDR 0x09 // Default I2C address
 #define MAX_RFID_STORAGE 20
 
 String allTags[MAX_RFID_STORAGE];
 float allTimes[MAX_RFID_STORAGE];
 int serialInput;
 
-Qwiic_Rfid myRfid(RFID_ADDR);
+Qwiic_Rfid myRfid(NEW_RFID_ADDR);
 
 void setup() {
   // Begin I-squared-C
