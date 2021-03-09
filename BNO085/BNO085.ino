@@ -1,5 +1,5 @@
-#include <Wire.h>
-#include "SparkFun_BNO085_Arduino_Library.h"
+// #include <SparkFun_BNO085_Arduino_Library.h>
+#include "SparkFun_BNO080_Arduino_Library/src/SparkFun_BNO085_Arduino_Library.cpp"
 
 BNO085 imu;
 long time;
