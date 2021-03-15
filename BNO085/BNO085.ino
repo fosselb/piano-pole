@@ -7,6 +7,7 @@ float linAccelX, linAccelY, linAccelZ;
 float quatReal, quatI, quatJ, quatK, quatRadianAccuracy;
 byte linAccelAccuracy, quatAccuracy;
 byte stability;
+String imuReading;
 
 void setup() {
   Serial.begin(115200);
@@ -20,13 +21,12 @@ void setup() {
 
   imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
-  Serial.print("t,");
-  Serial.print("linAccelX,linAccelY,linAccelZ,");
-  Serial.print("linAccelAccuracy,");
-  Serial.print("quatI,quatJ,quatK,quatReal,");
-  Serial.print("quatAccuracy,quatRadianAccuracy");
-  Serial.print("stabilityClassification");
-  Serial.println();
+  imuReading =
+    "t,"
+    + "linAccelX,linAccelY,linAccelZ,linAccelAccuracy,"
+    + "quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,"
+    + "stabilityClassification,";
+  Serial.println(imuReading);
 }
 
 void loop() {
@@ -48,22 +48,23 @@ void loop() {
     stability = imu.getStabilityClassification();
 
 
-    Serial.print(time/1000.0, 3); Serial.print(",");
+    imuReading =
+      String(time/1000.0, 3) + ","
 
-    Serial.print(linAccelX, 4); Serial.print(",");
-    Serial.print(linAccelY, 4); Serial.print(",");
-    Serial.print(linAccelZ, 4); Serial.print(",");
-    Serial.print(linAccelAccuracy); Serial.print(",");
+      + String(linAccelX, 4) + ","
+      + String(linAccelY, 4) + ","
+      + String(linAccelZ, 4) + ","
+      + String(linAccelAccuracy) + ","
 
-    Serial.print(quatI, 4); Serial.print(",");
-    Serial.print(quatJ, 4); Serial.print(",");
-    Serial.print(quatK, 4); Serial.print(",");
-    Serial.print(quatReal, 4); Serial.print(",");
-    Serial.print(quatAccuracy); Serial.print(",");
-    Serial.print(quatRadianAccuracy, 4); Serial.print(",");
+      + String(quatI, 4) + ","
+      + String(quatJ, 4) + ","
+      + String(quatK, 4) + ","
+      + String(quatReal, 4) + ","
+      + String(quatAccuracy) + ","
+      + String(quatRadianAccuracy, 4) + ","
 
-    Serial.print(stability); Serial.print(",");
+      + String(stability) + ",";
 
-    Serial.println();
+    Serial.println(imuReading);
   }
 }
