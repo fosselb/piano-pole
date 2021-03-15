@@ -1,10 +1,8 @@
 /*****************************************************************
-Software_Serial_IO_test.ino
+RFID_Qwiic_Module.ino
 Author: edited by Fosse Lin-Bianco
 Notes: Original tutorial taken from SparkFun website
-
-Set up a software serial port to pass data between an XBee Shield
-and the serial monitor.
+Purpose: To read data from RFID reader and transmit via XBee
 
 Hardware Hookup:
   The XBee Shield makes all of the connections you'll need
