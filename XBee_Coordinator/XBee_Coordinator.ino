@@ -21,8 +21,8 @@ SoftwareSerial XBee(2, 3); // XBee DOUT, IN - Arduino pin 2, 3 (RX, TX)
 //SoftwareSerial XBee(19, 18); // XBee DOUT, IN - Arduino pin 19, 18 (RX, TX)
 
 void setup() {
-  XBee.begin(9600);
-  Serial.begin(9600);
+  XBee.begin(115200);
+  Serial.begin(115200);
   Serial.println("Reading XBee Data");
 }
 
@@ -41,7 +41,7 @@ void loop() {
 // * to view entire package of bytes coming in *
     Serial.print(current, HEX);
     Serial.print(",");
-    
+
 // * to view parsed out analog data *
     if (dataCount == 12) {
       analog_MSB = current;

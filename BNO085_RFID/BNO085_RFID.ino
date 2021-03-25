@@ -10,10 +10,9 @@ Hardware Hookup:
   the XBee's DOUT and DIN pins to Arduino pins 2 and 3.
 */
 
-#include "../SparkFun_BNO080_Arduino_Library/src/SparkFun_BNO085_Arduino_Library.cpp"
+#include <SparkFun_BNO085_Arduino_Library.h>
 #include <SparkFun_Qwiic_Rfid.h>
 #include <SoftwareSerial.h>
-#include <Wire.h>
 
 #define NEW_RFID_ADDR 0x09
 
@@ -40,8 +39,8 @@ void setup() {
   Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000);  //Increase I2C data rate to 400kHz
-  XBee.begin(9600);  
-  pinMode(intPin, INPUT_PULLUP); 
+  XBee.begin(115200);
+  pinMode(intPin, INPUT_PULLUP);
 
   imu.begin();
   imu.enableLinearAccelerometer(5000);  //Send data updates at 200Hz
@@ -50,19 +49,8 @@ void setup() {
 
   imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
-  imuReading =
-    String("t,")
-    + "linAccelX,linAccelY,linAccelZ,linAccelAccuracy,"
-    + "quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,"
-    + "stabilityClassification,";
+  imuReading = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
   Serial.println(imuReading);
-
-  if (!myRfid.begin()) {
-    Serial.println("Could not communicate with Qwiic RFID!");
-  }
-  else {
-    Serial.println("Ready to scan some tags!");
-  }
 }
 
 void loop() {
@@ -105,10 +93,10 @@ void loop() {
     XBee.print(imuReading);
   }
 
-  if(digitalRead(intPin) == LOW) {  
+  if(digitalRead(intPin) == LOW) {
   //if (Serial.available()) {  // without buzzer
       //Serial.readString();   // without buzzer
-      
+
       current_tag_string = myRfid.getTag();
       //current_tag_string = "77777766"; // without buzzer
 
