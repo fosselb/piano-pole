@@ -17,7 +17,7 @@ Hardware Hookup:
 #include <SparkFun_Qwiic_Rfid.h>
 
 #define RFID_ADDR 0x7D // Default I2C address
-#define NEW_RFID_ADDR 0x09 // Default I2C address
+#define NEW_RFID_ADDR 0x09
 
 int serialInput;
 const int intPin = 8; // Interrupt Pin on pin 3
