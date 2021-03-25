@@ -1,5 +1,6 @@
 // #include <SparkFun_BNO085_Arduino_Library.h>
 #include "SparkFun_BNO080_Arduino_Library/src/SparkFun_BNO085_Arduino_Library.cpp"
+#include <SoftwareSerial.h>
 
 BNO085 imu;
 long time;
@@ -9,10 +10,13 @@ byte linAccelAccuracy, quatAccuracy;
 byte stability;
 String imuReading;
 
+SoftwareSerial XBee(2, 3); // RX, TX
+
 void setup() {
   Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000);  //Increase I2C data rate to 400kHz
+  XBee.begin(9600);
 
   imu.begin();
   imu.enableLinearAccelerometer(5000);  //Send data updates at 200Hz
@@ -22,7 +26,7 @@ void setup() {
   imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
   imuReading =
-    "t,"
+    String("t,")
     + "linAccelX,linAccelY,linAccelZ,linAccelAccuracy,"
     + "quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,"
     + "stabilityClassification,";
@@ -66,5 +70,6 @@ void loop() {
       + String(stability) + ",";
 
     Serial.println(imuReading);
+    XBee.print(imuReading);
   }
 }
