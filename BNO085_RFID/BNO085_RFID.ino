@@ -90,7 +90,7 @@ void loop() {
       + String(stability) + ",";
 
     Serial.println(imuReading);
-    XBee.print(imuReading);
+    XBee.println(imuReading);
   }
 
   if(digitalRead(intPin) == LOW) {
@@ -104,7 +104,7 @@ void loop() {
       current_tag_string_length = current_tag_string.length();
       String last_two_RFID_digits = current_tag_string.substring(current_tag_string_length - 2, current_tag_string_length);
       int current_tag = last_two_RFID_digits.toInt();
-      XBee.write(current_tag); // transmit tag info to XBee Coordinator
+      //XBee.write(current_tag); // transmit tag info to XBee Coordinator
       Serial.print("Tag ID (last 2 digits): ");
       Serial.println(current_tag);
   }
