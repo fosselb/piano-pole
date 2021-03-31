@@ -15,6 +15,7 @@ Hardware Hookup:
 //#include <SoftwareSerial.h>
 
 #define NEW_RFID_ADDR 0x09
+//#define Serial SerialUSB
 
 BNO085 imu;
 long time;
@@ -33,14 +34,14 @@ Qwiic_Rfid myRfid(NEW_RFID_ADDR);
 //SoftwareSerial XBee(2, 3); // RX, TX
 
 //Arduino Mega
-SoftwareSerial XBee(19, 18); // XBee DOUT, IN - Arduino pin 19, 18 (RX, TX)
+//SoftwareSerial XBee(19, 18); // XBee DOUT, IN - Arduino pin 19, 18 (RX, TX)
 
 void setup() {
-  Serial.begin(115200);
+  SerialUSB.begin(115200); // Initialize Serial Monitor USB
   Wire.begin();
   Wire.setClock(400000);  //Increase I2C data rate to 400kHz
-  XBee.begin(115200);
-  pinMode(intPin, INPUT_PULLUP);
+  //XBee.begin(115200);
+  Serial.begin(115200); // Initialize hardware serial port, pins 17/16
 
   imu.begin();
   imu.enableLinearAccelerometer(5000);  //Send data updates at 200Hz
@@ -49,8 +50,9 @@ void setup() {
 
   imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
+  while (!SerialUSB);
   imuReading = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
-  Serial.println(imuReading);
+  SerialUSB.println(imuReading);
 }
 
 void loop() {
@@ -89,8 +91,8 @@ void loop() {
 
       + String(stability) + ",";
 
-    Serial.println(imuReading);
-    XBee.println(imuReading);
+    SerialUSB.println(imuReading);
+    //XBee.println(imuReading);
   }
 
   if(digitalRead(intPin) == LOW) {
@@ -104,8 +106,8 @@ void loop() {
       current_tag_string_length = current_tag_string.length();
       String last_two_RFID_digits = current_tag_string.substring(current_tag_string_length - 2, current_tag_string_length);
       int current_tag = last_two_RFID_digits.toInt();
-      XBee.write(current_tag); // transmit tag info to XBee Coordinator
-      Serial.print("Tag ID (last 2 digits): ");
-      Serial.println(current_tag);
+      //XBee.write(current_tag); // transmit tag info to XBee Coordinator
+      SerialUSB.print("Tag ID (last 2 digits): ");
+      SerialUSB.println(current_tag);
   }
 }
