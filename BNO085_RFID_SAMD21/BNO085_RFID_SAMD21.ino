@@ -2,12 +2,6 @@
 BNO085_RFID.ino
 Author: Fosse Lin-Bianco and Evan Mitchell
 Purpose: To read IMU and RFID data. Transmit both via XBee.
-
-Hardware Hookup:
-  The XBee Shield makes all of the connections you'll need
-  between Arduino and XBee. If you have the shield make
-  sure the SWITCH IS IN THE "DLINE" POSITION. That will connect
-  the XBee's DOUT and DIN pins to Arduino pins 2 and 3.
 */
 
 #include <SparkFun_BNO085_Arduino_Library.h>
@@ -19,13 +13,13 @@ BNO085 imu;
 long time;
 float linAccelX, linAccelY, linAccelZ;
 float quatReal, quatI, quatJ, quatK, quatRadianAccuracy;
-byte linAccelAccuracy, quatAccuracy;
-byte stability;
-String imuReading;
-const int intPin = 7;
-byte rfidTag;
+byte linAccelAccuracy, quatAccuracy, stability;
+String imuString;
 
 Qwiic_Rfid rfid(NEW_RFID_ADDR);
+const byte intPin = 7;
+byte rfidTag;
+String rfidString;
 
 void setup() {
   SerialUSB.begin(9600);  // Initialize Serial Monitor USB
@@ -40,14 +34,13 @@ void setup() {
   imu.enableLinearAccelerometer(5000);  //Send data updates at 200Hz
   imu.enableRotationVector(5000);       //Send data updates at 200Hz
   imu.enableStabilityClassifier(5000);  //Send data updates at 200Hz
+  imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
   pinMode(intPin, INPUT_PULLUP);
   rfid.begin();
-  
-  imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
-  imuReading = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
-  SerialUSB.println(imuReading);
+  imuString = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
+  SerialUSB.println(imuString);
 }
 
 void loop() {
@@ -69,7 +62,7 @@ void loop() {
     stability = imu.getStabilityClassification();
 
 
-    imuReading =
+    imuString =
       String(time/1000.0, 3) + ","
 
       + String(linAccelX, 4) + ","
@@ -86,14 +79,19 @@ void loop() {
 
       + String(stability) + ",";
 
-    SerialUSB.println(imuReading);
-    Serial.println(imuReading);               //Transmit IMU data to XBee Coordinator
+    SerialUSB.println(imuString);
+    Serial.println(imuString);                //Transmit IMU data to XBee Coordinator
   }
 
   if (digitalRead(intPin) == LOW) {
-    rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
+    time = millis();
 
-    SerialUSB.println("T" + String(rfidTag));
-    Serial.println("T" + String(rfidTag));    //Transmit RFID tag to XBee Coordinator
+    rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
+    rfidString =
+      String(time/1000.0, 3) + ","
+      + String(rfidTag) + ",";
+
+    SerialUSB.println(rfidString);
+    Serial.println(rfidString);               //Transmit RFID tag to XBee Coordinator
   }
 }

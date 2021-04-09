@@ -2,12 +2,6 @@
 BNO085_RFID.ino
 Author: Fosse Lin-Bianco and Evan Mitchell
 Purpose: To read IMU and RFID data. Transmit both via XBee.
-
-Hardware Hookup:
-  The XBee Shield makes all of the connections you'll need
-  between Arduino and XBee. If you have the shield make
-  sure the SWITCH IS IN THE "DLINE" POSITION. That will connect
-  the XBee's DOUT and DIN pins to Arduino pins 2 and 3.
 */
 
 #include <SparkFun_BNO085_Arduino_Library.h>
@@ -16,41 +10,39 @@ Hardware Hookup:
 
 #define NEW_RFID_ADDR 0x09
 
+#define XBee Serial1
+//SoftwareSerial XBee(2, 3);  // RX, TX
+
 BNO085 imu;
 long time;
 float linAccelX, linAccelY, linAccelZ;
 float quatReal, quatI, quatJ, quatK, quatRadianAccuracy;
-byte linAccelAccuracy, quatAccuracy;
-byte stability;
-String imuReading;
-const int intPin = 8; // Interrupt Pin on pin 3
-String current_tag_string;
-int current_tag_string_length;
+byte linAccelAccuracy, quatAccuracy, stability;
+String imuString;
 
-Qwiic_Rfid myRfid(NEW_RFID_ADDR);
-
-//SparkFun RedBoard
-//SoftwareSerial XBee(2, 3); // RX, TX
-
-//Arduino Mega
-SoftwareSerial XBee(19, 18); // XBee DOUT, IN - Arduino pin 19, 18 (RX, TX)
+Qwiic_Rfid rfid(NEW_RFID_ADDR);
+const byte intPin = 7;
+byte rfidTag;
+String rfidString;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  XBee.begin(9600);         // Hardware serial port (XBee)
+
   Wire.begin();
-  Wire.setClock(400000);  //Increase I2C data rate to 400kHz
-  XBee.begin(115200);
-  pinMode(intPin, INPUT_PULLUP);
+  Wire.setClock(400000);    //Increase I2C data rate to 400kHz
 
   imu.begin();
   imu.enableLinearAccelerometer(5000);  //Send data updates at 200Hz
   imu.enableRotationVector(5000);       //Send data updates at 200Hz
   imu.enableStabilityClassifier(5000);  //Send data updates at 200Hz
-
   imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
-  imuReading = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
-  Serial.println(imuReading);
+  pinMode(intPin, INPUT_PULLUP);
+  rfid.begin();
+
+  imuString = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
+  Serial.println(imuString);
 }
 
 void loop() {
@@ -72,7 +64,7 @@ void loop() {
     stability = imu.getStabilityClassification();
 
 
-    imuReading =
+    imuString =
       String(time/1000.0, 3) + ","
 
       + String(linAccelX, 4) + ","
@@ -89,23 +81,19 @@ void loop() {
 
       + String(stability) + ",";
 
-    Serial.println(imuReading);
-    XBee.println(imuReading);
+    Serial.println(imuString);
+    XBee.println(imuString);
   }
 
-  if(digitalRead(intPin) == LOW) {
-  //if (Serial.available()) {  // without buzzer
-      //Serial.readString();   // without buzzer
+  if (digitalRead(intPin) == LOW) {
+    time = millis();
 
-      current_tag_string = myRfid.getTag();
-      //current_tag_string = "77777766"; // without buzzer
+    rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
+    rfidString =
+      String(time/1000.0, 3) + ","
+      + String(rfidTag) + ",";
 
-      // extract last 2 digits of tag
-      current_tag_string_length = current_tag_string.length();
-      String last_two_RFID_digits = current_tag_string.substring(current_tag_string_length - 2, current_tag_string_length);
-      int current_tag = last_two_RFID_digits.toInt();
-      XBee.write(current_tag); // transmit tag info to XBee Coordinator
-      Serial.print("Tag ID (last 2 digits): ");
-      Serial.println(current_tag);
+    Serial.println(rfidString);
+    XBee.println(rfidString);
   }
 }
