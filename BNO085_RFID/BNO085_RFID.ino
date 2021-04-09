@@ -8,29 +8,27 @@ Purpose: To read IMU and RFID data. Transmit both via XBee.
 #include <SparkFun_Qwiic_Rfid.h>
 //#include <SoftwareSerial.h>
 
-#define NEW_RFID_ADDR 0x09
-
 #define XBee Serial1
 //SoftwareSerial XBee(2, 3);  // RX, TX
 
+float time;
+
 BNO085 imu;
-long time;
 float linAccelX, linAccelY, linAccelZ;
 float quatReal, quatI, quatJ, quatK, quatRadianAccuracy;
 byte linAccelAccuracy, quatAccuracy, stability;
 String imuString;
 
-Qwiic_Rfid rfid(NEW_RFID_ADDR);
-const byte intPin = 7;
+Qwiic_Rfid rfid(0x7D);
 byte rfidTag;
 String rfidString;
 
 void setup() {
   Serial.begin(9600);
-  XBee.begin(9600);         // Hardware serial port (XBee)
+  XBee.begin(9600);
 
   Wire.begin();
-  Wire.setClock(400000);    //Increase I2C data rate to 400kHz
+  Wire.setClock(400000);  //Increase I2C data rate to 400kHz
 
   imu.begin();
   imu.enableLinearAccelerometer(5000);  //Send data updates at 200Hz
@@ -38,7 +36,6 @@ void setup() {
   imu.enableStabilityClassifier(5000);  //Send data updates at 200Hz
   imu.tareAllAxes(TARE_ROTATION_VECTOR);
 
-  pinMode(intPin, INPUT_PULLUP);
   rfid.begin();
 
   imuString = "t,linAccelX,linAccelY,linAccelZ,linAccelAccuracy,quatI,quatJ,quatK,quatReal,quatAccuracy,quatRadianAccuracy,stabilityClassification,";
@@ -47,7 +44,7 @@ void setup() {
 
 void loop() {
   if (imu.dataAvailable()) {
-    time = millis();
+    time = millis() / 1000.0;
 
     linAccelX = imu.getLinAccelX();
     linAccelY = imu.getLinAccelY();
@@ -65,7 +62,7 @@ void loop() {
 
 
     imuString =
-      String(time/1000.0, 3) + ","
+      String(time, 3) + ","
 
       + String(linAccelX, 4) + ","
       + String(linAccelY, 4) + ","
@@ -85,12 +82,12 @@ void loop() {
     XBee.println(imuString);
   }
 
-  if (digitalRead(intPin) == LOW) {
-    time = millis();
+  rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
+  if (rfidTag != 0) {
+    time = millis() / 1000.0 - rfid.getPrecReqTime();
 
-    rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
     rfidString =
-      String(time/1000.0, 3) + ","
+      String(time, 3) + ","
       + String(rfidTag) + ",";
 
     Serial.println(rfidString);
