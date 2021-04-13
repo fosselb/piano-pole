@@ -79,7 +79,7 @@ void loop() {
       + String(stability) + ",";
 
     Serial.println(imuString);
-    XBee.println(imuString);
+    XBee.println("i" + imuString);
   }
 
   rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
@@ -91,6 +91,6 @@ void loop() {
       + String(rfidTag) + ",";
 
     Serial.println(rfidString);
-    XBee.println(rfidString);
+    XBee.println("r" + rfidString);
   }
 }
