@@ -6,10 +6,8 @@ Purpose: To read IMU and RFID data. Transmit both via XBee.
 
 #include <SparkFun_BNO085_Arduino_Library.h>
 #include <SparkFun_Qwiic_Rfid.h>
-#include <SoftwareSerial.h>
 
-//#define XBee Serial1
-SoftwareSerial XBee(2, 3);  // RX, TX
+#define XBee Serial1
 
 float time;
 
