@@ -60,7 +60,9 @@ void loop() {
 
 
     imuString =
-      String(time, 3) + ","
+      "i,"
+
+      + String(time, 3) + ","
 
       + String(linAccelX, 4) + ","
       + String(linAccelY, 4) + ","
@@ -77,7 +79,7 @@ void loop() {
       + String(stability) + ",";
 
     Serial.println(imuString);
-    XBee.println("i" + imuString);
+    XBee.println(imuString);
   }
 
   rfidTag = (byte) rfid.getTag().toInt();   //Extract final byte of tag
@@ -85,10 +87,11 @@ void loop() {
     time = millis() / 1000.0 - rfid.getPrecReqTime();
 
     rfidString =
-      String(time, 3) + ","
+      "r,"
+      + String(time, 3) + ","
       + String(rfidTag) + ",";
 
     Serial.println(rfidString);
-    XBee.println("r" + rfidString);
+    XBee.println(rfidString);
   }
 }
