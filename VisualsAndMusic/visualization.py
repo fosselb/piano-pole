@@ -4,9 +4,7 @@ import sounddevice as sd
 import soundfile as sf
 import threading
 
-filename = 'A3vH.wav'
-# Extract data and sampling rate from file
-data, fs = sf.read(filename, dtype='float32')
+A3 = 'A3vH.wav'
 
 height = 800
 width = 800
@@ -22,7 +20,7 @@ x4 = []
 y4 = []
 i = 0
 
-app = App(width,height) # create window: width, height
+app = App(width,height) # create window: width, height. Creates THREAD 1
 
 with open("rose_data.csv") as csv_file:
     csv_reader = csv.reader(csv_file)
@@ -47,12 +45,36 @@ y3 = [int(i) for i in y3]
 x4 = [int(i) for i in x4]
 y4 = [int(i) for i in y4]
 
+def playNote(note_filename):
+    data, fs = sf.read(note_filename, dtype='float32') # Extract data and sampling rate from file
+    sd.play(data, fs)
+    status = sd.wait()  # Wait until file is done playing
+
+def createSoundThread(note_filename):
+    t = threading.Thread(target=playNote, args=[note_filename])
+    t.start()
+
+def stillPlaying():
+    allThreads = threading.enumerate()
+    # for thread in allThreads:
+        # print(thread.getName(), end = '')
+    # print('')
+    if len(allThreads) > 2:
+        return True
+    else:
+        print('FALSE')
+        return False
+
+# setup
 app.background(0) # set background
 app.fill(255) # set white circle to represent pole
 app.ellipse(width/2, height/2, 40, 40)
 
+createSoundThread(A3) # Creates THREAD 2
 
+# draw
 while True:
+# for i in range(500):
 
     app.fill(0, 255, 0)
     app.ellipse(x1[i] + width/2, y1[i] + height/2, circle_diameter, circle_diameter)
@@ -68,11 +90,13 @@ while True:
     else:
         i = 0
 
-    #sd.play(data, fs)
     app.redraw() # refresh the window
 
+    decision = stillPlaying()
+    if decision == False:
+        createSoundThread(A3)
 
-    #status = sd.wait()  # Wait until file is done playing
+
 
 
 
