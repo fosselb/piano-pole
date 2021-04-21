@@ -2,6 +2,7 @@ from processing_py import *
 import csv
 import sounddevice as sd
 import soundfile as sf
+import threading
 
 filename = 'A3vH.wav'
 # Extract data and sampling rate from file
@@ -67,7 +68,7 @@ while True:
     else:
         i = 0
 
-    sd.play(data, fs)
+    #sd.play(data, fs)
     app.redraw() # refresh the window
 
 
