@@ -4,7 +4,10 @@ import sounddevice as sd
 import soundfile as sf
 import threading
 
-A3 = 'A3vH.wav'
+C4 = 'samples/C4vH.wav'
+DS4 = 'samples/D#4vH.wav'
+FS4 = 'samples/F#4vH.wav'
+A4 = 'samples/A4vH.wav'
 
 height = 800
 width = 800
@@ -51,39 +54,60 @@ def playNote(note_filename):
     status = sd.wait()  # Wait until file is done playing
 
 def createSoundThread(note_filename):
-    t = threading.Thread(target=playNote, args=[note_filename])
+    threadName = note_filename
+    t = threading.Thread(name=threadName, target=playNote, args=[note_filename])
     t.start()
+    print('thread started')
 
-def stillPlaying():
+def stillPlaying(note_filename):
     allThreads = threading.enumerate()
-    # for thread in allThreads:
-        # print(thread.getName(), end = '')
-    # print('')
-    if len(allThreads) > 2:
-        return True
-    else:
-        print('FALSE')
-        return False
+    for thread in allThreads:
+        print(thread.getName(), end = '')
+    print('')
+    for thread in allThreads:
+        if thread.getName() == note_filename:
+            return True
+
+    return False
+    # if len(allThreads) > 2:
+    #     return True
+    # else:
+    #     print('FALSE')
+    #     return False
 
 # setup
 app.background(0) # set background
 app.fill(255) # set white circle to represent pole
 app.ellipse(width/2, height/2, 40, 40)
 
-createSoundThread(A3) # Creates THREAD 2
+# createSoundThread(A3) # Creates THREAD 2
+tolerance = 2;
 
 # draw
 while True:
-# for i in range(500):
+    x1_coor = x1[i] + width/2
+    y1_coor = y1[i] + height/2
+    x2_coor = x2[i] + width/2
+    y2_coor = y2[i] + height/2
 
     app.fill(0, 255, 0)
-    app.ellipse(x1[i] + width/2, y1[i] + height/2, circle_diameter, circle_diameter)
+    app.ellipse(x1_coor, y1_coor, circle_diameter, circle_diameter)
     app.fill(255, 0, 0)
-    app.ellipse(x2[i] + width/2, y2[i] + height/2, circle_diameter, circle_diameter)
+    app.ellipse(x2_coor, y2_coor, circle_diameter, circle_diameter)
     app.fill(0, 0, 255)
     app.ellipse(x3[i] + width/2, y3[i] + height/2, circle_diameter, circle_diameter)
     app.fill(255, 255, 0)
     app.ellipse(x4[i] + width/2, y4[i] + height/2, circle_diameter, circle_diameter)
+
+    if (x1_coor > 400 - tolerance and x1_coor < 400 + tolerance):
+        if (y1_coor > 400 - tolerance and y1_coor < 400 + tolerance):
+            if stillPlaying(C4) == False:
+                createSoundThread(C4)
+
+    if (x2_coor > 400 - tolerance and x2_coor < 400 + tolerance):
+        if (y2_coor > 400 - tolerance and y2_coor < 400 + tolerance):
+            if stillPlaying(DS4) == False:
+                createSoundThread(DS4)
 
     if i < len(t) - 1:
         i = i + 1
@@ -92,9 +116,7 @@ while True:
 
     app.redraw() # refresh the window
 
-    decision = stillPlaying()
-    if decision == False:
-        createSoundThread(A3)
+
 
 
 
