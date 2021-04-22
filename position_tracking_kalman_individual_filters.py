@@ -10,7 +10,7 @@ from scipy.spatial.transform import Rotation
 from scipy.linalg import block_diag
 
 
-TAG_HEIGHTS = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: None}
+TAG_HEIGHTS = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}
 
 
 class File_Reader:
@@ -167,20 +167,26 @@ if __name__ == "__main__":
 
     try:
         while True:
-            reading = get_next_reading(input, output)
+            reading = None
+            while reading == None:
+                try:
+                    reading = get_next_reading(input, output)
+                except KeyboardInterrupt:
+                    raise(KeyboardInterrupt)
+                except:
+                    pass
+            # reading = get_next_reading(input, output)
             addr = reading["address"]
+            type = reading["type"]
 
-            if reading["type"] == "i":
+            if type == "i":
                 t_k, accr_k, acc_k, quat_k, stability_k = reading["data"]
-            elif reading["type"] == "r":
-                t_k, heihgt = reading["data"]
+            elif type == "r":
+                t_k, height = reading["data"]
 
             if addr not in kalman.keys():
                 kalman[addr] = KalmanFilter(dim_x=9, dim_z=3)
-                H_block = np.array([0, 0, 1])
-                kalman[addr].H = block_diag(H_block, H_block, H_block)
                 kalman[addr].P = np.diag([0, 0, 20, 0, 0, 20, 0, 0, 20])
-                kalman[addr].R = np.diag([0.5, 0.5, 0.5])
 
                 t[addr] = np.array([t_k])
                 pos[addr] = np.zeros((1, 3))
@@ -191,16 +197,26 @@ if __name__ == "__main__":
             t[addr] = np.append(t[addr], t_k)
             dt = t[addr][-1] - t[addr][-2]
 
-            if stability_k == 4:
-                F_block = np.array([[1, dt, dt**2/2], [0, 1, dt], [0, 0, 1]])
-            else:
-                F_block = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+            F_block = np.array([[1, dt, dt**2/2], [0, 1, dt], [0, 0, 1]])
+            if type == "i":
+                kalman[addr].R = np.diag([0.5, 0.5, 0.5])
+                H_block = np.array([0, 0, 1])
+                if stability_k != 4:
+                    F_block = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+            elif type == "r":
+                kalman[addr].R = np.diag([0.01, 0.01, 0.01])
+                H_block = np.array([1, 0, 0])
+
+            kalman[addr].H = block_diag(H_block, H_block, H_block)
             kalman[addr].F = block_diag(F_block, F_block, F_block)
             Q_block = Q_discrete_white_noise(dim=3, dt=dt, var=1)
             kalman[addr].Q = block_diag(Q_block, Q_block, Q_block)
 
             kalman[addr].predict()
-            kalman[addr].update(accr_k)
+            if type == "i":
+                kalman[addr].update(accr_k)
+            elif type == "r":
+                kalman[addr].update(np.array([0, 0, height]))
 
             x_k = kalman[addr].x.reshape((3, 3), order="F")
             pos[addr] = np.vstack((pos[addr], x_k[0]))

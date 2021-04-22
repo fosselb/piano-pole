@@ -160,10 +160,7 @@ if __name__ == "__main__":
     output = get_output(args)
 
     kalman = KalmanFilter(dim_x=9, dim_z=3)
-    H_block = np.array([0, 0, 1])
-    kalman.H = block_diag(H_block, H_block, H_block)
     kalman.P = np.diag([0, 0, 20, 0, 0, 20, 0, 0, 20])
-    kalman.R = np.diag([0.5, 0.5, 0.5])
 
     t = {}
     pos = np.zeros((1, 3))
@@ -172,12 +169,21 @@ if __name__ == "__main__":
 
     try:
         while True:
-            reading = get_next_reading(input, output)
+            reading = None
+            while reading == None:
+                try:
+                    reading = get_next_reading(input, output)
+                except KeyboardInterrupt:
+                    raise(KeyboardInterrupt)
+                except:
+                    pass
+            # reading = get_next_reading(input, output)
             addr = reading["address"]
+            type = reading["type"]
 
-            if reading["type"] == "i":
+            if type == "i":
                 t_k, accr_k, acc_k, quat_k, stability_k = reading["data"]
-            elif reading["type"] == "r":
+            elif type == "r":
                 t_k, height = reading["data"]
 
             try:
@@ -188,16 +194,26 @@ if __name__ == "__main__":
 
             dt = t[addr][-1] - t[addr][-2]
 
-            if stability_k == 4:
-                F_block = np.array([[1, dt, dt**2/2], [0, 1, dt], [0, 0, 1]])
-            else:
-                F_block = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+            F_block = np.array([[1, dt, dt**2/2], [0, 1, dt], [0, 0, 1]])
+            if type == "i":
+                kalman.R = np.diag([0.5, 0.5, 0.5])
+                H_block = np.array([0, 0, 1])
+                if stability_k != 4:
+                    F_block = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+            elif type == "r":
+                kalman.R = np.diag([0.01, 0.01, 0.01])
+                H_block = np.array([1, 0, 0])
+
+            kalman.H = block_diag(H_block, H_block, H_block)
             kalman.F = block_diag(F_block, F_block, F_block)
             Q_block = Q_discrete_white_noise(dim=3, dt=dt, var=1)
             kalman.Q = block_diag(Q_block, Q_block, Q_block)
 
             kalman.predict()
-            kalman.update(accr_k)
+            if type == "i":
+                kalman.update(accr_k)
+            elif type == "r":
+                kalman.update(np.array([0, 0, height]))
 
             x_k = kalman.x.reshape((3, 3), order="F")
             pos = np.vstack((pos, x_k[0]))
