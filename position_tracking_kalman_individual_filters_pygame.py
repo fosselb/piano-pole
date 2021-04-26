@@ -1,16 +1,16 @@
 import argparse
 import sys
+from contextlib import redirect_stdout
 
 import matplotlib.pyplot as plt
 import numpy as np
-from serial import Serial, SerialException
-from filterpy.kalman import KalmanFilter
+with redirect_stdout(None):
+    import pygame
 from filterpy.common import Q_discrete_white_noise
-from scipy.spatial.transform import Rotation
+from filterpy.kalman import KalmanFilter
 from scipy.linalg import block_diag
-
-
-TAG_HEIGHTS = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}
+from scipy.spatial.transform import Rotation
+from serial import Serial, SerialException
 
 
 class File_Reader:
@@ -34,39 +34,42 @@ class XBee_Reader:
 
     def read(self):
         START_BYTE = 0x7E
-        byteNum = None
+
+        byte_num = None
         length = None
         checksum = 0
 
         while True:
+            if not self.XBee.in_waiting:
+                continue
+
             current = self.XBee.read()
             current = int.from_bytes(current, byteorder="big")
 
             if current == START_BYTE:
                 message = ""
-                byteNum = 0
-            elif byteNum == None:
+                byte_num = 0
+            elif byte_num == None:
                 continue
 
-            if byteNum > 2:
+            if byte_num > 2:
                 checksum += current
 
-            if byteNum == 2:
+            if byte_num == 2:
                 length = (previous << 8) | current
-                length += 3     # Include start and length bytes but NOT checksum byte
-            elif byteNum == 5:
+                length += 3  # Include start and length bytes but NOT checksum byte
+            elif byte_num == 5:
                 address = (previous << 8) | current
-            elif byteNum >= 8 and byteNum < length:
+            elif byte_num >= 8 and byte_num < length:
                 message += chr(current)
-            elif byteNum == length:
+            elif byte_num == length:
                 message = message.replace("\r", "")
                 if (checksum & 0xFF) != 0xFF:
                     message = None
                 return address, message
 
             previous = current
-            byteNum += 1
-
+            byte_num += 1
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Track the position of a Piano Pole performer.")
@@ -134,6 +137,8 @@ def get_next_line(input, output):
     return address, line
 
 def get_next_reading(input, output):
+    heights = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}
+
     address, line = get_next_line(input, output)
     # print(str(address) + ": " + line)
     data = line.strip(",").split(",")
@@ -149,15 +154,44 @@ def get_next_reading(input, output):
     elif reading["type"] == "r":
         t_k = data[0]
         tag = data[1]
-        height = TAG_HEIGHTS[tag]
+        height = heights[tag]
         reading["data"] = [t_k, height]
     return reading
+
+def visualize(visualization, color=0, x=None, y=None):
+    colors = ["red", "orange", "yellow", "green", "blue", "purple"]
+    width = visualization.get_width()
+    height = visualization.get_height()
+    xyscale = 5000
+    performer_radius = 10
+    pole_radius = 25
+
+    if x != None and y != None:
+        pos = (width / 2 + x * xyscale, height / 2 + y * xyscale)
+        pygame.draw.circle(visualization, colors[color % len(colors)], pos, performer_radius)
+        pygame.draw.circle(visualization, "black", pos, performer_radius, 1)
+    pygame.draw.circle(visualization, "white", (width / 2, height / 2), pole_radius)
+    pygame.draw.circle(visualization, "black", (width / 2, height / 2), pole_radius, 1)
+    pygame.display.flip()
+
+def musicalize(channel, height):
+    notes = ["C3", "D3", "E3", "F3", "G3", "A4", "B4", "C4", "D4", "E4", "F4", "G4", "A5", "B5", "C5"]
+
+    channel = pygame.mixer.Channel(channel)
+    note = pygame.mixer.Sound("piano_samples/" + notes[height] + ".mp3")
+    # if not channel.get_busy():
+    channel.play(note)
 
 
 if __name__ == "__main__":
     args = parse_args()
     input = get_input(args)
     output = get_output(args)
+
+    pygame.init()
+    visualization = pygame.display.set_mode((1000, 1000))
+    visualization.fill("black")
+    visualize(visualization)
 
     kalman = {}
     t = {}
@@ -171,8 +205,8 @@ if __name__ == "__main__":
             while reading == None:
                 try:
                     reading = get_next_reading(input, output)
-                except KeyboardInterrupt:
-                    raise(KeyboardInterrupt)
+                except (KeyboardInterrupt, StopIteration):
+                    raise
                 except:
                     pass
             # reading = get_next_reading(input, output)
@@ -218,12 +252,21 @@ if __name__ == "__main__":
             elif type == "r":
                 kalman[addr].update(np.array([0, 0, height]))
 
-            x_k = kalman[addr].x.reshape((3, 3), order="F")
-            pos[addr] = np.vstack((pos[addr], x_k[0]))
-            vel[addr] = np.vstack((vel[addr], x_k[1]))
-            acc[addr] = np.vstack((acc[addr], x_k[2]))
+            pos_k, vel_k, acc_k = kalman[addr].x.reshape((3, 3), order="F")
+            pos[addr] = np.vstack((pos[addr], pos_k))
+            vel[addr] = np.vstack((vel[addr], vel_k))
+            acc[addr] = np.vstack((acc[addr], acc_k))
 
-    except (StopIteration, KeyboardInterrupt):
+            visualize(visualization, addr, pos_k[0], pos_k[1])
+            for threshold in range(0, 5, 1/3):
+                if pos[addr][-2] < threshold and pos[addr][-1] >= threshold:
+                    musicalize(addr, round(threshold*3))
+                    break
+                elif pos[addr][-2] > threshold and pos[addr][-1] <= threshold:
+                    musicalize(addr, round(threshold*3) - 1)
+                    break
+
+    except (KeyboardInterrupt, StopIteration):
         for addr in kalman.keys():
             fig = plt.figure()
             # acc_ax = fig.add_subplot(3, 1, 1, projection="3d")
@@ -241,16 +284,18 @@ if __name__ == "__main__":
             # vel_sc = vel_ax.scatter(velr[:,0], velr[:,1], velr[:,2], c=t-t[0])
             # fig.colorbar(vel_sc, ax=vel_ax)
             # pos_ax = fig.add_subplot(3, 1, 3, projection="3d")
-            pos_ax = fig.add_subplot(1, 1, 1, projection="3d")
-            pos_ax.set_title("Position Data from System " + str(addr))
-            pos_ax.set_xlabel("X (m)")
-            pos_ax.set_ylabel("Y (m)")
-            pos_ax.set_zlabel("Z (m)")
-            pos_sc = pos_ax.scatter(pos[addr][:,0], pos[addr][:,1], pos[addr][:,2], c=t[addr]-t[addr][0])
-            fig.colorbar(pos_sc, ax=pos_ax)
-            plt.show()
+            # pos_ax = fig.add_subplot(1, 1, 1, projection="3d")
+            # pos_ax.set_title("Position Data from System " + str(addr))
+            # pos_ax.set_xlabel("X (m)")
+            # pos_ax.set_ylabel("Y (m)")
+            # pos_ax.set_zlabel("Z (m)")
+            # pos_sc = pos_ax.scatter(pos[addr][:, 0], pos[addr][:, 1], pos[addr][:, 2], c=t[addr] - t[addr][0])
+            # fig.colorbar(pos_sc, ax=pos_ax)
+            # plt.show()
 
+    finally:
         if output:
             output.close()
 
-        sys.exit()
+        while True:
+            pass
