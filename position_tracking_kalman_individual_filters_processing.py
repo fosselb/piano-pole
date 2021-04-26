@@ -71,6 +71,7 @@ class XBee_Reader:
             previous = current
             byte_num += 1
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Track the position of a Piano Pole performer.")
     exclusive = parser.add_mutually_exclusive_group()
@@ -158,7 +159,7 @@ def get_next_reading(input, output):
         reading["data"] = [t_k, height]
     return reading
 
-def visualize(visualization, x=None, y=None, color=0):
+def visualize(visualization, color=0, x=None, y=None):
     colors = [(255, 0, 0), (255, 127, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (75, 0, 130), (148, 0, 211)]
     width = visualization.width
     height = visualization.height
@@ -174,7 +175,7 @@ def visualize(visualization, x=None, y=None, color=0):
     visualization.redraw()
 
 def musicalize(height):
-    notes = ["C3", "D3", "E3", "F3", "G3", "A4", "B4", "C4", "D4", "E4", "F4", "G4", "A5", "B5", "C5"]
+    notes = ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
     playsound("piano_samples/" + notes[height] + ".mp3", block=False)
 
 
@@ -233,7 +234,7 @@ if __name__ == "__main__":
                 if stability_k != 4:
                     F_block = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
             elif type == "r":
-                kalman[addr].R = np.diag([0.01, 0.01, 0.01])
+                kalman[addr].R = np.diag([0.001, 0.001, 0.001])
                 H_block = np.array([1, 0, 0])
 
             kalman[addr].H = block_diag(H_block, H_block, H_block)
@@ -253,12 +254,13 @@ if __name__ == "__main__":
             acc[addr] = np.vstack((acc[addr], acc_k))
 
             visualize(visualization, addr, pos_k[0], pos_k[1])
-            for threshold in range(0, 5, 1/3):
-                if pos[addr][-2] < threshold and pos[addr][-1] >= threshold:
-                    musicalize(addr, round(threshold*3))
+            for threshold in range(15):
+                # if np.sqrt(pos[addr][-1][0]**2 + pos[addr][-1][1]**2) < 0.5:
+                if pos[addr][-2][2] < threshold / 3 and pos[addr][-1][2] >= threshold / 3:
+                    musicalize(threshold)
                     break
-                elif pos[addr][-2] > threshold and pos[addr][-1] <= threshold:
-                    musicalize(addr, round(threshold*3) - 1)
+                elif pos[addr][-2][2] > threshold / 3 and pos[addr][-1][2] <= threshold / 3:
+                    musicalize(threshold - 1)
                     break
 
     except (KeyboardInterrupt, StopIteration):
@@ -292,4 +294,8 @@ if __name__ == "__main__":
         if output:
             output.close()
 
-        visualization.exit()
+        try:
+            while True:
+                pass
+        except:
+            visualization.exit()

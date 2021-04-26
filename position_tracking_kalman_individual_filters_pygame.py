@@ -175,10 +175,10 @@ def visualize(visualization, color=0, x=None, y=None):
     pygame.display.flip()
 
 def musicalize(channel, height):
-    notes = ["C3", "D3", "E3", "F3", "G3", "A4", "B4", "C4", "D4", "E4", "F4", "G4", "A5", "B5", "C5"]
+    notes = ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
 
     channel = pygame.mixer.Channel(channel)
-    note = pygame.mixer.Sound("piano_samples/" + notes[height] + ".mp3")
+    note = pygame.mixer.Sound("piano_samples/" + notes[height] + ".wav")
     # if not channel.get_busy():
     channel.play(note)
 
@@ -238,7 +238,7 @@ if __name__ == "__main__":
                 if stability_k != 4:
                     F_block = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
             elif type == "r":
-                kalman[addr].R = np.diag([0.01, 0.01, 0.01])
+                kalman[addr].R = np.diag([0.001, 0.001, 0.001])
                 H_block = np.array([1, 0, 0])
 
             kalman[addr].H = block_diag(H_block, H_block, H_block)
@@ -258,13 +258,14 @@ if __name__ == "__main__":
             acc[addr] = np.vstack((acc[addr], acc_k))
 
             visualize(visualization, addr, pos_k[0], pos_k[1])
-            for threshold in range(0, 5, 1/3):
-                if pos[addr][-2] < threshold and pos[addr][-1] >= threshold:
-                    musicalize(addr, round(threshold*3))
-                    break
-                elif pos[addr][-2] > threshold and pos[addr][-1] <= threshold:
-                    musicalize(addr, round(threshold*3) - 1)
-                    break
+            for threshold in range(15):
+                if np.sqrt(pos[addr][-1][0]**2 + pos[addr][-1][1]**2) < 0.5:
+                    if pos[addr][-2][2] < threshold / 3 and pos[addr][-1][2] >= threshold / 3:
+                        musicalize(addr, threshold)
+                        break
+                    elif pos[addr][-2][2] > threshold / 3 and pos[addr][-1][2] <= threshold / 3:
+                        musicalize(addr, threshold - 1)
+                        break
 
     except (KeyboardInterrupt, StopIteration):
         for addr in kalman.keys():
