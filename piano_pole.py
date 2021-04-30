@@ -1,11 +1,17 @@
+# piano_pole.ino
+# Author: Fosse Lin-Bianco and Evan Mitchell
+# Purpose: Visualize and musicalize a Piano Pole performance.
+# Usage: piano_pole.py [-h] [-p PORT | -i INPUT] [-o OUTPUT] [-t] [-r]
+
 import argparse
+from contextlib import redirect_stderr, redirect_stdout
+from time import time, sleep
 import sys
-from contextlib import redirect_stdout
 
 import matplotlib.pyplot as plt
 import numpy as np
-with redirect_stdout(None):
-    import pygame
+from playsound import playsound
+import processing_py as processing
 from filterpy.common import Q_discrete_white_noise
 from filterpy.kalman import KalmanFilter
 from scipy.linalg import block_diag
@@ -71,12 +77,15 @@ class XBee_Reader:
             previous = current
             byte_num += 1
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Track the position of a Piano Pole performer.")
+    parser = argparse.ArgumentParser(description="Visualize and musicalize a Piano Pole performance.")
     exclusive = parser.add_mutually_exclusive_group()
-    exclusive.add_argument("-p", "--port", default="COM8", help="Serial port to listen to")
-    exclusive.add_argument("-i", "--input", help="File to read from")
-    parser.add_argument("-o", "--output", help="File to write to")
+    exclusive.add_argument("-p", "--port", default="COM8", help="serial port to listen to (default COM8)")
+    exclusive.add_argument("-i", "--input", help="file to read from")
+    parser.add_argument("-o", "--output", help="file to write to")
+    parser.add_argument("-t", "--time", help="play back in real time", action="store_true")
+    parser.add_argument("-r", "--recording", help="play beep at start for recording purposes", action="store_true")
     return parser.parse_args()
 
 def get_input(args):
@@ -133,14 +142,14 @@ def get_next_line(input, output):
             if len(lines) > 1:
                 line = lines.pop(0)
             existing[address] = lines
-
     return address, line
 
+play_times = {}
 def get_next_reading(input, output):
     heights = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}
 
     address, line = get_next_line(input, output)
-    # print(str(address) + ": " + line)
+    print(str(address) + ": " + line)
     data = line.strip(",").split(",")
     reading = {"address": address, "type": data.pop(0)}
     data = np.array([float(datum) for datum in data])
@@ -156,31 +165,37 @@ def get_next_reading(input, output):
         tag = data[1]
         height = heights[tag]
         reading["data"] = [t_k, height]
+
+    if args.time:
+        try:
+            diff = play_times[address]
+        except KeyError:
+            play_times[address] = time() - t_k
+        else:
+            sleep_time = t_k + diff - time()
+            if sleep_time > 0:
+                sleep(sleep_time)
+
     return reading
 
 def visualize(visualization, color=0, x=None, y=None):
-    colors = ["red", "orange", "yellow", "green", "blue", "purple"]
-    width = visualization.get_width()
-    height = visualization.get_height()
-    xyscale = 5000
-    performer_radius = 10
-    pole_radius = 25
+    colors = [(255, 0, 0), (255, 127, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (75, 0, 130), (148, 0, 211)]
+    width = visualization.width
+    height = visualization.height
+    xyscale = 200
+    performer_diameter = 40
+    pole_diameter = 100
 
     if x != None and y != None:
-        pos = (width / 2 + x * xyscale, height / 2 + y * xyscale)
-        pygame.draw.circle(visualization, colors[color % len(colors)], pos, performer_radius)
-        pygame.draw.circle(visualization, "black", pos, performer_radius, 1)
-    pygame.draw.circle(visualization, "white", (width / 2, height / 2), pole_radius)
-    pygame.draw.circle(visualization, "black", (width / 2, height / 2), pole_radius, 1)
-    pygame.display.flip()
+        visualization.fill(*colors[color % len(colors)])
+        visualization.ellipse(width / 2 + x * xyscale, height / 2 + y * xyscale, performer_diameter, performer_diameter)
+    visualization.fill(255)
+    visualization.ellipse(width / 2, height / 2, pole_diameter, pole_diameter)
+    visualization.redraw()
 
-def musicalize(channel, height):
+def musicalize(height):
     notes = ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
-
-    channel = pygame.mixer.Channel(channel)
-    note = pygame.mixer.Sound("piano_samples/" + notes[height] + ".wav")
-    # if not channel.get_busy():
-    channel.play(note)
+    playsound("piano_samples/" + notes[height] + ".mp3", block=False)
 
 
 if __name__ == "__main__":
@@ -188,10 +203,14 @@ if __name__ == "__main__":
     input = get_input(args)
     output = get_output(args)
 
-    pygame.init()
-    visualization = pygame.display.set_mode((1000, 1000))
-    visualization.fill("black")
+    with redirect_stderr(None), redirect_stdout(None):
+        visualization = processing.App(2000, 2000)
+    visualization.background(0)
     visualize(visualization)
+
+    if args.recording:
+        sleep(5)
+        playsound("piano_samples/beep.mp3", block=False)
 
     kalman = {}
     t = {}
@@ -209,7 +228,6 @@ if __name__ == "__main__":
                     raise
                 except:
                     pass
-            # reading = get_next_reading(input, output)
             addr = reading["address"]
             type = reading["type"]
 
@@ -259,44 +277,46 @@ if __name__ == "__main__":
 
             visualize(visualization, addr, pos_k[0], pos_k[1])
             for threshold in range(15):
-                if np.sqrt(pos[addr][-1][0]**2 + pos[addr][-1][1]**2) < 0.5:
-                    if pos[addr][-2][2] < threshold / 3 and pos[addr][-1][2] >= threshold / 3:
-                        musicalize(addr, threshold)
-                        break
-                    elif pos[addr][-2][2] > threshold / 3 and pos[addr][-1][2] <= threshold / 3:
-                        musicalize(addr, threshold - 1)
-                        break
+                # if np.sqrt(pos[addr][-1][0]**2 + pos[addr][-1][1]**2) < 0.5:
+                if pos[addr][-2][2] < threshold / 3 and pos[addr][-1][2] >= threshold / 3 and threshold < 14:
+                    musicalize(threshold + 1)
+                    break
+                elif pos[addr][-2][2] > threshold / 3 and pos[addr][-1][2] <= threshold / 3:
+                    musicalize(threshold)
+                    break
 
     except (KeyboardInterrupt, StopIteration):
         for addr in kalman.keys():
             fig = plt.figure()
             # acc_ax = fig.add_subplot(3, 1, 1, projection="3d")
-            # acc_ax.set_title("Acceleration Data from BNO085")
+            # acc_ax.set_title("Acceleration Data from System " + str(addr))
             # acc_ax.set_xlabel("X (m/s^2)")
             # acc_ax.set_ylabel("Y (m/s^2)")
             # acc_ax.set_zlabel("Z (m/s^2)")
-            # acc_sc = acc_ax.scatter(accr[:,0], accr[:,1], accr[:,2], c=t-t[0])
+            # acc_sc = acc_ax.scatter(acc[addr][:,0], acc[addr][:,1], acc[addr][:,2], c=t[addr]-t[addr][0])
             # fig.colorbar(acc_sc, ax=acc_ax)
             # vel_ax = fig.add_subplot(3, 1, 2, projection="3d")
-            # vel_ax.set_title("Velocity Data from BNO085")
+            # vel_ax.set_title("Velocity Data from System " + str(addr))
             # vel_ax.set_xlabel("X (m/s)")
             # vel_ax.set_ylabel("Y (m/s)")
             # vel_ax.set_zlabel("Z (m/s)")
-            # vel_sc = vel_ax.scatter(velr[:,0], velr[:,1], velr[:,2], c=t-t[0])
+            # vel_sc = vel_ax.scatter(vel[addr][:,0], vel[addr][:,1], vel[addr][:,2], c=t[addr]-t[addr][0])
             # fig.colorbar(vel_sc, ax=vel_ax)
-            # pos_ax = fig.add_subplot(3, 1, 3, projection="3d")
-            # pos_ax = fig.add_subplot(1, 1, 1, projection="3d")
-            # pos_ax.set_title("Position Data from System " + str(addr))
-            # pos_ax.set_xlabel("X (m)")
-            # pos_ax.set_ylabel("Y (m)")
-            # pos_ax.set_zlabel("Z (m)")
-            # pos_sc = pos_ax.scatter(pos[addr][:, 0], pos[addr][:, 1], pos[addr][:, 2], c=t[addr] - t[addr][0])
-            # fig.colorbar(pos_sc, ax=pos_ax)
-            # plt.show()
+            pos_ax = fig.add_subplot(1, 1, 1, projection="3d")          # pos_ax = fig.add_subplot(3, 1, 3, projection="3d")
+            pos_ax.set_title("Position Data from System " + str(addr))
+            pos_ax.set_xlabel("X (m)")
+            pos_ax.set_ylabel("Y (m)")
+            pos_ax.set_zlabel("Z (m)")
+            pos_sc = pos_ax.scatter(pos[addr][:, 0], pos[addr][:, 1], pos[addr][:, 2], c=t[addr] - t[addr][0])
+            fig.colorbar(pos_sc, ax=pos_ax)
+            plt.show()
 
     finally:
         if output:
             output.close()
 
-        while True:
-            pass
+        try:
+            while True:
+                pass
+        except:
+            visualization.exit()

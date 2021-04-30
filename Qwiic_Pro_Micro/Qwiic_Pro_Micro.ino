@@ -1,7 +1,7 @@
 /*
-BNO085_RFID.ino
+Qwiic_Pro_Micro.ino
 Author: Fosse Lin-Bianco and Evan Mitchell
-Purpose: To read IMU and RFID data. Transmit both via XBee.
+Purpose: Read IMU and RFID data; transmit both via XBee.
 */
 
 #include <SparkFun_BNO085_Arduino_Library.h>
