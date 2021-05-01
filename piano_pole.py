@@ -20,6 +20,11 @@ from scipy.spatial.transform import Rotation
 from serial import Serial, SerialException
 
 
+HEIGHTS = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}  # last byte of tag id: height (m)
+COLORS = [(255, 0, 0), (255, 127, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (75, 0, 130), (148, 0, 211)]
+NOTES = ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
+
+
 class File_Reader:
     def __init__(self, filename):
         with open(filename, "r") as file:
@@ -147,8 +152,6 @@ def get_next_line(input, output):
 
 play_times = {}
 def get_next_reading(input, output):
-    heights = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}
-
     address, line = get_next_line(input, output)
     # print(str(address) + ": " + line)
     data = line.strip(",").split(",")
@@ -164,7 +167,7 @@ def get_next_reading(input, output):
     elif reading["type"] == "r":
         t_k = data[0]
         tag = data[1]
-        height = heights[tag]
+        height = HEIGHTS[tag]
         reading["data"] = [t_k, height]
 
     if args.time:
@@ -180,7 +183,6 @@ def get_next_reading(input, output):
     return reading
 
 def visualize(visualization, color=0, x=None, y=None):
-    colors = [(255, 0, 0), (255, 127, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (75, 0, 130), (148, 0, 211)]
     width = visualization.width
     height = visualization.height
     xyscale = 200
@@ -188,15 +190,14 @@ def visualize(visualization, color=0, x=None, y=None):
     pole_diameter = 100
 
     if x != None and y != None:
-        visualization.fill(*colors[color % len(colors)])
+        visualization.fill(*COLORS[color % len(COLORS)])
         visualization.ellipse(width / 2 + x * xyscale, height / 2 + y * xyscale, performer_diameter, performer_diameter)
     visualization.fill(255)
     visualization.ellipse(width / 2, height / 2, pole_diameter, pole_diameter)
     visualization.redraw()
 
 def musicalize(height):
-    notes = ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
-    playsound("piano_samples/" + notes[height] + ".mp3", block=False)
+    playsound("piano_samples/" + NOTES[height] + ".mp3", block=False)
 
 
 if __name__ == "__main__":
