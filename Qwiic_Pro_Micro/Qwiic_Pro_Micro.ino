@@ -4,7 +4,7 @@ Author: Fosse Lin-Bianco and Evan Mitchell
 Purpose: Read IMU and RFID data; transmit both via XBee.
 */
 
-#include "SparkFun_BNO085_Arduino_Library/src/SparkFun_BNO085_Arduino_Library.h"
+#include "SparkFun_BNO080_Arduino_Library/src/SparkFun_BNO085_Arduino_Library.cpp"
 #include <SparkFun_Qwiic_Rfid.h>
 
 #define XBee Serial1
