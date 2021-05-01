@@ -9,7 +9,7 @@ The objective of this project is to create a modified version of the Chinese pol
 
 ## Installation
 First, clone this GitHub repository to your local computer by running
-```bash
+```
 git clone --recursive https://github.com/fosselb/piano-pole
 ```
 
@@ -21,16 +21,32 @@ Finally, a number of Python packages must be installed for proper operation of *
 Once the installation process is completed, and with hardware set up properly, upload the *Qwiic_Pro_Micro.ino* Arduino script to all four Qwiic Pro Micro microcontrollers. Disconnect the microcontrollers from the computer and plug in the batteries with all four IMUs oriented along the same axes. Put on the gloves and shoes and prepare to begin the performance. When ready, with the receiver XBee plugged into the computer, run *piano_pole.py*.
 
 The Python script can be run with the serial port of the receiver XBee using the command
-```bash
+```
 python piano_pole.py -p <port>
 ```
 A sample output reflecting recorded data can be produced by running
-```bash
+```
 python piano_pole.py -t -i logs/log7.txt
 ```
 An additional flag `-o` allows for the output of readings to a .txt file.
 
-For more information about the available flags and their operations, please run `python piano_pole.py -h`.
+For further information about the available flags and their operations, please see `python piano_pole.py -h`:
+```
+$ python piano_pole.py -h
+usage: piano_pole.py [-h] [-p PORT | -i INPUT] [-o OUTPUT] [-t] [-r]
+
+Visualize and musicalize a Piano Pole performance.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  serial port to listen to (default COM8)
+  -i INPUT, --input INPUT
+                        file to read from
+  -o OUTPUT, --output OUTPUT
+                        file to write to
+  -t, --time            play back in real time
+  -r, --recording       play beep at start for recording purposes
+```
 
 ## Acknowledgments
 Piano sample files were obtained from [MIDI.js Soundfonts](https://github.com/gleitz/midi-js-soundfonts).  
