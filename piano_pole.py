@@ -1,7 +1,8 @@
-# piano_pole.ino
+# piano_pole.py
 # Author: Fosse Lin-Bianco and Evan Mitchell
 # Purpose: Visualize and musicalize a Piano Pole performance.
-# Usage: piano_pole.py [-h] [-p PORT | -i INPUT] [-o OUTPUT] [-t] [-r]
+# Usage: `piano_pole.py [-h] [-p PORT | -i INPUT] [-o OUTPUT] [-t] [-r]`
+# For sample output: `python piano_pole.py -t -i logs/log7.txt`
 
 import argparse
 from contextlib import redirect_stderr, redirect_stdout
@@ -149,7 +150,7 @@ def get_next_reading(input, output):
     heights = {244: 1, 38: 1, 227: 1, 204: 1, 178: 2, 181: 2, 190: 2, 16: 2, 108: 100}
 
     address, line = get_next_line(input, output)
-    print(str(address) + ": " + line)
+    # print(str(address) + ": " + line)
     data = line.strip(",").split(",")
     reading = {"address": address, "type": data.pop(0)}
     data = np.array([float(datum) for datum in data])
