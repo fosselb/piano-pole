@@ -30,10 +30,7 @@ python piano_pole.py -t -i logs/log7.txt
 ```
 An additional flag `-o` allows for the output of readings to a .txt file.
 
-For more information about the available flags and their operations, please run
-```bash
-python piano_pole.py -h
-```
+For more information about the available flags and their operations, please run `python piano_pole.py -h`.
 
 ## Acknowledgments
 Piano sample files were obtained from [MIDI.js Soundfonts](https://github.com/gleitz/midi-js-soundfonts).  
